@@ -1,28 +1,40 @@
 # CodeBERT Memory Safety Vulnerability Detector
 
-基於 CodeBERT 與 Focal Loss 的 C/C++ 記憶體安全漏洞自動偵測系統。
+A lightweight automated detection system for C/C++ memory safety vulnerabilities, built on CodeBERT and Focal Loss.
 
-## 研究摘要
+> Independent research by a high school student. Trained entirely on a consumer-grade Intel Arc A380 GPU (6GB VRAM).
 
-針對 CWE-119（緩衝區溢位）與 CWE-787（越界寫入）設計的輕量化漏洞偵測模型。透過混合訓練策略結合合成資料（Juliet Test Suite）與真實漏洞資料（PrimeVul），並引入 Focal Loss 解決資安資料樣本不平衡問題。
+## Results
 
-在 CASTLE-C250 基準測試上達到 **76.67% Recall**，相較 CodeBERT baseline（11.94%）提升 4.4 倍。
+Evaluated on the **CASTLE-C250** benchmark targeting buffer overflow vulnerabilities (CWE-119/787):
 
-| 模型 | Recall | F1 |
-|------|--------|----|
+| Model | Recall | F1 |
+|-------|--------|----|
 | CodeBERT (Baseline) | 11.94% | 0.119 |
-| CodeT5 | 17.21% | 0.172 |
-| **本研究 (Focal Loss)** | **76.67%** | **0.254** |
+| CodeT5 (SOTA) | 17.21% | 0.172 |
+| **This Work (Focal Loss)** | **76.67%** | **0.254** |
 
-## 系統架構
+**4.4x Recall improvement over CodeBERT baseline — without graph-based structural augmentation.**
 
-- **骨幹模型**：Microsoft CodeBERT (`codebert-base`, 125M 參數)
-- **損失函數**：Focal Loss（α=0.75, γ=2.0）
-- **輸入處理**：滑動視窗機制（視窗大小 40 行，重疊 10 行）
-- **訓練資料**：PrimeVul + Juliet Test Suite 混合訓練
-- **硬體加速**：Intel XPU BF16 混合精度
+An unexpected finding: the model generalizes beyond its training distribution, successfully detecting CWE-327, CWE-770, and CWE-798 vulnerabilities despite never being trained on them — suggesting CodeBERT's pre-training encodes generalizable unsafe code semantics.
 
-## 環境需求
+## Architecture
+
+- **Backbone**: Microsoft CodeBERT (`codebert-base`, 125M parameters)
+- **Loss Function**: Focal Loss (α=0.75, γ=2.0) — addresses severe class imbalance in security data
+- **Input Handling**: Sliding window mechanism (window: 40 lines, overlap: 10 lines) — preserves cross-boundary context beyond CodeBERT's 512-token limit
+- **Training Data**: Hybrid strategy combining PrimeVul (real-world) + Juliet Test Suite (synthetic)
+- **Hardware**: Intel Arc A380 (6GB VRAM), BF16 mixed precision via Intel Extension for PyTorch
+
+## Research Context
+
+This work targets **CWE-119 (Buffer Overflow)** and **CWE-787 (Out-of-Bounds Write)** — two of the most prevalent memory safety vulnerability classes in C/C++. According to Microsoft MSRC and Google Chromium, ~70% of high-severity CVEs are memory safety issues.
+
+Training uses **PrimeVul** — the same dataset used by Google DeepMind's Gemini 1.5 Pro for vulnerability detection evaluation — combined with **Juliet Test Suite v1.3** (NIST SARD).
+
+> Note: Model weights and training data are not included in this repository. The codebase demonstrates the full training and inference pipeline. Reproducing results requires independent data preparation and benchmark setup.
+
+## Requirements
 
 ```
 torch
@@ -31,35 +43,41 @@ scikit-learn
 pandas
 numpy
 tqdm
-intel-extension-for-pytorch  # Intel XPU 加速（可選）
+intel-extension-for-pytorch  # optional, for Intel XPU acceleration
 ```
 
-## 使用方式
+## Usage
 
-### 訓練模型
+### Training
 
-修改 `train.py` 中的資料路徑後執行：
+Edit data paths in `train.py`, then run:
 
 ```bash
 python train.py
 ```
 
-訓練完成後模型儲存於 `./memsafety_focal_model/`。
+Model checkpoint saved to `./memsafety_focal_model/`.
 
-### 掃描專案
+### Scanning a Project
 
 ```bash
-# 掃描 C/C++ 專案
+# Scan a C/C++ codebase
 python scanner.py --scan_dir ./your_project --model_dir ./memsafety_focal_model
 
-# 指定閾值
+# Adjust detection threshold
 python scanner.py --scan_dir ./your_project --model_dir ./memsafety_focal_model --threshold 0.4
 ```
 
-## 資料集
+## Datasets
 
-- **PrimeVul**：真實開源專案漏洞資料集，涵蓋 140+ CWE 類型
-- **Juliet Test Suite v1.3**：NIST 開發的合成漏洞測試集，涵蓋 118 種 CWE
+- **PrimeVul**: Real-world vulnerability dataset extracted from open-source projects, covering 140+ CWE types
+- **Juliet Test Suite v1.3**: Synthetic vulnerability benchmark developed by NIST, covering 118 CWE types
+
+## Reference
+
+If you find this work relevant to your research, please feel free to reach out.
+
+Full research report (25 pages) available upon request.
 
 ## License
 
