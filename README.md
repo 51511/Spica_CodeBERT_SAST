@@ -83,5 +83,5 @@ Full research report (25 pages) available upon request.
 
 GPL v3
 
-## Citation
+
 Chen, N. (2026). Lightweight Memory Safety Vulnerability Detection via CodeBERT and Focal Loss. Zenodo. https://doi.org/10.5281/zenodo.18816400
