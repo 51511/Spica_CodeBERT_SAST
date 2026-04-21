@@ -85,5 +85,3 @@ If you find this work relevant to your research, please feel free to reach out. 
 GPL v3
 
 ---
-**Citation:**
-Chen, N. (2026). Lightweight Memory Safety Vulnerability Detection via CodeBERT and Focal Loss. Zenodo. https://doi.org/10.5281/zenodo.18816400
